@@ -7,26 +7,34 @@ const dedent = require("dedent");
 const fs = require("fs");
 const path = require("path");
 const sql = require("mssql");
+const { Client } = require("pg");
+
 require("dotenv").config();
 
-const {
-  TextAnalysisClient,
-  AzureKeyCredential,
-} = require("@azure/ai-language-text");
 const { LANGUAGE_API_KEY, LANGUAGE_API_ENDPOINT, DATABASE_CONNECTION_STRING } =
   process.env;
+
+const { PG_HOST, PG_PORT, PG_DATABASE, PG_USERNAME, PG_PASSWORD } = process.env;
+
+/**
+ * @type {Knex}
+ */
+const knex = require("knex")({
+  client: "pg",
+  connection: {
+    host: PG_HOST,
+    port: PG_PORT,
+    database: PG_DATABASE,
+    user: PG_USERNAME,
+    password: PG_PASSWORD,
+  },
+});
 
 module.exports = (app) => {
   // Your code here
   app.log.info("Yay, the app was loaded!");
 
-  let appInsights = new AppInsights();
-
   app.on("pull_request.closed", async (context) => {
-    appInsights.trackEvent({
-      name: "Pull Request Close Payload",
-      properties: context.payload,
-    });
     let pr_number = context.payload.pull_request.number;
     let pr_body = context.payload.pull_request.body;
     let detectedLanguage = "en";
@@ -34,6 +42,7 @@ module.exports = (app) => {
     let organization_name = context.payload.repository.owner.login
 
     // check language for pr_body
+    /*
     if (LANGUAGE_API_ENDPOINT && LANGUAGE_API_KEY) {
       const TAclient = new TextAnalysisClient(
         LANGUAGE_API_ENDPOINT,
@@ -44,14 +53,7 @@ module.exports = (app) => {
           let startTime = Date.now();
           let result = await TAclient.analyze("LanguageDetection", [pr_body]);
           let duration = Date.now() - startTime;
-          appInsights.trackDependency({
-            target: "API:Language Detection",
-            name: "detect pull request description language",
-            duration: duration,
-            resultCode: 0,
-            success: true,
-            dependencyTypeName: "HTTP",
-          });
+
           if (result.length > 0 && !result[0].error && ["en", "es", "pt", "fr"].includes(result[0].primaryLanguage.iso6391Name) ) {
             detectedLanguage = result[0].primaryLanguage.iso6391Name;
           }else {
@@ -59,11 +61,11 @@ module.exports = (app) => {
           }
         } catch (err) {
           app.log.error(err);
-          appInsights.trackException({ exception: err });
         }
       }
     }
-
+    //*/
+    
     // read file that aligns with detected language
     const issue_body = fs.readFileSync(
       "./issue_template/copilot-usage-" +
@@ -91,26 +93,17 @@ module.exports = (app) => {
       });
     } catch (err) {
       app.log.error(err);
-      appInsights.trackException({ exception: err });
     }
   });
 
   app.on("issues.edited", async (context) => {
     if (context.payload.issue.title.startsWith("Copilot Usage - PR#")) {
-      appInsights.trackEvent({
-        name: "Issue Edited Payload",
-        properties: context.payload,
-      });
       await GetSurveyData(context);
     }
   });
 
   app.on("issue_comment.created", async (context) => {
     if (context.payload.issue.title.startsWith("Copilot Usage - PR#")) {
-      appInsights.trackEvent({
-        name: "Issue Comment Created Payload",
-        properties: context.payload,
-      });
       await GetSurveyData(context);
     }
   });
@@ -146,30 +139,12 @@ module.exports = (app) => {
       let startTime = Date.now();
       let query = await insertIntoDB(context, issue_id, pr_number, isCopilotUsed, null, null, comment);
       let duration = Date.now() - startTime;
-      appInsights.trackDependency({
-        target: "DB:copilotUsage",
-        name: "insert when comment is present",
-        data: query,
-        duration: duration,
-        resultCode: 0,
-        success: true,
-        dependencyTypeName: "SQL",
-      });
     }
 
     if (isCopilotUsed) {
       let startTime = Date.now();
       let query = await insertIntoDB(context, issue_id, pr_number, isCopilotUsed, null, null, comment);
       let duration = Date.now() - startTime;
-      appInsights.trackDependency({
-        target: "DB:copilotUsage",
-        name: "insert when Yes is selected",
-        data: query,
-        duration: duration,
-        resultCode: 0,
-        success: true,
-        dependencyTypeName: "SQL",
-      });
 
       // loop through checkboxes and find the one that contains %
       let pctSelected = false;
@@ -188,15 +163,6 @@ module.exports = (app) => {
         let startTime = Date.now();
         let query = await insertIntoDB(context, issue_id, pr_number, isCopilotUsed, pctValue, null, comment);
         let duration = Date.now() - startTime;
-        appInsights.trackDependency({
-          target: "DB:copilotUsage",
-          name: "insert when pct is selected",
-          data: query,
-          duration: duration,
-          resultCode: 0,
-          success: true,
-          dependencyTypeName: "SQL",
-        });
       }
 
       // loop through checkboxes and find the ones that do not contain % and are not Yes or No
@@ -226,15 +192,6 @@ module.exports = (app) => {
         let startTime = Date.now();
         let query = await insertIntoDB(context, issue_id, pr_number, isCopilotUsed, null, freqValue, comment);
         let duration = Date.now() - startTime;
-        appInsights.trackDependency({
-          target: "DB:copilotUsage",
-          name: "insert when freq is selected",
-          data: query,
-          duration: duration,
-          resultCode: 0,
-          success: true,
-          dependencyTypeName: "SQL",
-        });
       }
 
       if( pctSelected && freqSelected ){
@@ -248,7 +205,6 @@ module.exports = (app) => {
           });
         } catch (err) {
           app.log.error(err);
-          appInsights.trackException({ exception: err });
         }
       }
     } else {
@@ -264,15 +220,6 @@ module.exports = (app) => {
         let startTime = Date.now();
         let query = await insertIntoDB(context, issue_id, pr_number, isCopilotUsed, null, null, comment);
         let duration = Date.now() - startTime;
-        appInsights.trackDependency({
-          target: "DB:copilotUsage",
-          name: "insert when No is selected",
-          data: query,
-          duration: duration,
-          resultCode: 0,
-          success: true,
-          dependencyTypeName: "SQL",
-        });
 
         if (comment) {
           try {
@@ -285,7 +232,6 @@ module.exports = (app) => {
             });
           } catch (err) {
             app.log.error(err);
-            appInsights.trackException({ exception: err });
           }
         }
       }
@@ -303,15 +249,19 @@ module.exports = (app) => {
   ) {
     let conn = null;
     try {
-      conn = await sql.connect(DATABASE_CONNECTION_STRING);
+      //conn = await sql.connect(DATABASE_CONNECTION_STRING);
 
       // Check if table exists
+      /*
       let tableCheckResult = await sql.query`
       SELECT *
       FROM INFORMATION_SCHEMA.TABLES
       WHERE TABLE_NAME = 'SurveyResults'
     `;
+      //*/
+      let tableCheckResult = await knex.schema.hasTable("SurveyResults");
 
+      /*
       if (tableCheckResult.recordset.length === 0) {
         // Create table if it doesn't exist
         await sql.query`
@@ -333,6 +283,11 @@ module.exports = (app) => {
       );
       `;
       }
+      //*/
+
+      if (!tableCheckResult) {
+        // Create table if it doesn't exist
+        
 
       let result =
         await sql.query`SELECT * FROM SurveyResults WHERE Issue_id = ${issue_id}`;
@@ -422,7 +377,6 @@ module.exports = (app) => {
       }
     } catch (err) {
       app.log.error(err);
-      appInsights.trackException({ exception: err });
     } finally {
       if (conn) {
         conn.close();
@@ -436,47 +390,3 @@ module.exports = (app) => {
   // To get your app running against GitHub, see:
   // https://probot.github.io/docs/development/
 };
-
-// Define class for app insights. If no instrumentation key is provided, then no app insights will be used.
-class AppInsights {
-  constructor() {
-    if (process.env.APPINSIGHTS_INSTRUMENTATIONKEY) {
-      this.appInsights = require("applicationinsights");
-      this.appInsights.setup().start();
-      this.appIClient = this.appInsights.defaultClient;
-    } else {
-      this.appIClient = null;
-    }
-  }
-  trackEvent(name, properties) {
-    if (this.appIClient) {
-      this.appIClient.trackEvent({ name: name, properties: properties });
-    }
-  }
-  trackDependency(
-    target,
-    name,
-    data,
-    duration,
-    resultCode,
-    success,
-    dependencyTypeName
-  ) {
-    if (this.appIClient) {
-      this.appIClient.trackDependency({
-        target: target,
-        name: name,
-        data: data,
-        duration: duration,
-        resultCode: resultCode,
-        success: success,
-        dependencyTypeName: dependencyTypeName,
-      });
-    }
-  }
-  trackException(exception) {
-    if (this.appIClient) {
-      this.appIClient.trackException({ exception: exception });
-    }
-  }
-}
