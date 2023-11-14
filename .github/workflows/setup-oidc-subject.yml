@@ -36,6 +36,8 @@ jobs:
         echo "CLAIM_TEMPLATE=$CLAIM_TEMPLATE" >> "$GITHUB_ENV"
 
     - name: Status summary
+      env:
+        CLAIM_TEMPLATE: ${{ env.CLAIM_TEMPLATE }}
       run: |
         echo "## OIDC Subject Claim Template Set" >> $GITHUB_STEP_SUMMARY
         echo "```" >> $GITHUB_STEP_SUMMARY
