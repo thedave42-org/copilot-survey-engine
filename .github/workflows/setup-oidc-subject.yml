@@ -21,7 +21,7 @@ jobs:
           -H "Accept: application/vnd.github+json" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
           /repos/$REPO/actions/oidc/customization/sub \
-          --input .github/config/aws-subject.json
+          --input ../config/aws-subject.json
 
     - name: Verify OIDC subject claim
       env:
