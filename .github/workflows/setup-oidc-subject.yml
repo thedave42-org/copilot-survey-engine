@@ -35,8 +35,8 @@ jobs:
         export CLAIM_TEMPLATE=$(gh api \
           -H "Accept: application/vnd.github+json" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
-          /repos/$REPO/actions/oidc/customization/sub) \
-          | jq .
+          /repos/$REPO/actions/oidc/customization/sub \
+          | jq . )
         echo "CLAIM_TEMPLATE=$CLAIM_TEMPLATE" >> "$GITHUB_ENV"
 
     - name: Status summary
