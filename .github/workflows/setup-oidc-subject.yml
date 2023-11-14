@@ -23,3 +23,21 @@ jobs:
           /repos/$REPO/actions/oidc/customization/sub \
           -F use_default=true \
           -f "include_claim_keys[]=job_workflow_ref" -f "include_claim_keys[]=context"
+
+    - name: Verify OIDC subject claim
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
+      run: |
+        export CLAIM_TEMPLATE=$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/$REPO/actions/oidc/customization/sub)
+        echo "CLAIM_TEMPLATE=$CLAIM_TEMPLATE" >> "$GITHUB_ENV"
+
+    - name: Status summary
+      run: |
+        echo "## OIDC Subject Claim Template Set" >> $GITHUB_STEP_SUMMARY
+        echo "```" >> $GITHUB_STEP_SUMMARY
+        echo "$CLAIM_TEMPLATE" >> $GITHUB_STEP_SUMMARY
+        echo "```" >> $GITHUB_STEP_SUMMARY
