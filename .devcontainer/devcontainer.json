@@ -6,20 +6,12 @@
 	"service": "app",
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	"features": {
-		"ghcr.io/devcontainers/features/terraform:1": {
-			"installSentinel": true,
-			"installTFsec": true,
-			"installTerraformDocs": true,
-			"version": "latest",
-			"tflint": "latest",
-			"terragrunt": "latest"
-		},
-		"ghcr.io/itsmechlark/features/postgresql:1": {
-			"version": "latest"
-		},
-		"ghcr.io/robbert229/devcontainer-features/postgresql-client:1": {
-			"version": "13"
-		}
+		"ghcr.io/devcontainers/features/terraform:1": {},
+		"ghcr.io/itsmechlark/features/postgresql:1": {},
+		"ghcr.io/robbert229/devcontainer-features/postgresql-client:1": {},
+		"ghcr.io/devcontainers/features/aws-cli:1": {},
+		"ghcr.io/devcontainers/features/github-cli:1": {},
+		"ghcr.io/joshuanianji/devcontainer-features/github-cli-persistence:0": {}
 	},
 	"customizations": {
 		"vscode": {
@@ -27,7 +19,8 @@
 				"GitHub.copilot",
 				"GitHub.copilot-chat",
 				"GitHub.copilot-labs",
-				"ms-azuretools.vscode-docker"
+				"ms-azuretools.vscode-docker",
+				"github.vscode-github-actions"
 			]
 		}
 	}

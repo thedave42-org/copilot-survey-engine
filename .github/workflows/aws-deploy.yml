@@ -1,0 +1,31 @@
+name: Deploy and Update AWS Resources
+
+on:
+  workflow_dispatch:
+
+jobs:
+  app-deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write # This is required for requesting the JWT
+      contents: read
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-region: us-west-1
+        role-to-assume: arn:aws:iam::377117578606:role/thedave42-copilot-survey-engine
+        role-session-name: copilot-survey-engine
+
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+
+    - name: Initialize Terraform
+      run: terraform init ./deployment/aws-infra/
+
+    - name: Apply Terraform
+      run: terraform apply -auto-approve ./deployment/aws-infra/

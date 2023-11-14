@@ -1,33 +1,54 @@
+variable "vpc_name" {
+  description = "The name of the VPC"
+  default     = "copilot-survey-engine-vpc"
+}
+
+variable "public_subnet_name" {
+  description = "The name of the public subnet"
+  default     = "copilot-survey-engine-public-subnet"
+}
+
+variable "private_subnet_name" {
+  description = "The name of the private subnet"
+  default     = "copilot-survey-engine-private-subnet"
+}
+
+variable "docker_sg_name_prefix" {
+  description = "The name prefix of the Docker security group"
+  default     = "copilot-survey-engine-docker-sg-"
+}
+
 provider "aws" {
+  profile = "copilot-survey-engine"
   region = "us-west-1"
 }
 
-resource "aws_vpc" "copilot-survey-engine-vpc" {
+resource "aws_vpc" "main" {
   cidr_block = "10.0.0.0/16"
   tags = {
-    Name = "copilot-survey-engine-vpc"
+    Name = var.vpc_name
   }
 }
 
-resource "aws_subnet" "copilot-survey-engine-public-subnet" {
-  vpc_id     = aws_vpc.copilot-survey-engine-vpc.id
+resource "aws_subnet" "public" {
+  vpc_id     = aws_vpc.main.id
   cidr_block = "10.0.1.0/24"
   tags = {
-    Name = "copilot-survey-engine-public-subnet"
+    Name = var.public_subnet_name
   }
 }
 
-resource "aws_subnet" "copilot-survey-engine-private-subnet" {
-  vpc_id     = aws_vpc.copilot-survey-engine-vpc.id
+resource "aws_subnet" "private" {
+  vpc_id     = aws_vpc.main.id
   cidr_block = "10.0.2.0/24"
   tags = {
-    Name = "copilot-survey-engine-private-subnet"
+    Name = var.private_subnet_name
   }
 }
 
-resource "aws_security_group" "copilot-survey-engine-docker-sg" {
-  name_prefix = "copilot-survey-engine-docker-sg-"
-  vpc_id      = aws_vpc.copilot-survey-engine-vpc.id
+resource "aws_security_group" "docker_sg" {
+  name_prefix = var.docker_sg_name_prefix
+  vpc_id      = aws_vpc.main.id
 
   ingress {
     from_port   = 80
@@ -39,19 +60,19 @@ resource "aws_security_group" "copilot-survey-engine-docker-sg" {
 
 resource "aws_security_group" "copilot-survey-engine-postgres-sg" {
   name_prefix = "copilot-survey-engine-postgres-sg-"
-  vpc_id      = aws_vpc.copilot-survey-engine-vpc.id
+  vpc_id      = aws_vpc.main.id
 
   ingress {
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    security_groups = [aws_security_group.copilot-survey-engine-docker-sg.id]
+    security_groups = [aws_security_group.docker_sg.id]
   }
 }
 
 resource "aws_db_subnet_group" "copilot-survey-engine-db-subnet-group" {
   name       = "copilot-survey-engine-db-subnet-group"
-  subnet_ids = [aws_subnet.copilot-survey-engine-private-subnet.id]
+  subnet_ids = [aws_subnet.private.id]
 }
 
 resource "aws_db_instance" "copilot-survey-engine-db" {
@@ -106,8 +127,8 @@ resource "aws_ecs_service" "copilot-survey-engine-service" {
   desired_count   = 1
 
   network_configuration {
-    subnets          = [aws_subnet.copilot-survey-engine-public-subnet.id]
-    security_groups  = [aws_security_group.copilot-survey-engine-docker-sg.id]
+    subnets          = [aws_subnet.public.id]
+    security_groups  = [aws_security_group.docker_sg.id]
     assign_public_ip = true
   }
 }
