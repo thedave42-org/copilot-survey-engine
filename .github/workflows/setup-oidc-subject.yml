@@ -42,7 +42,7 @@ jobs:
       env:
         CLAIM_TEMPLATE: ${{ env.CLAIM_TEMPLATE }}
       run: |
-        echo "## OIDC Subject Claim Template Set" > $GITHUB_STEP_SUMMARY
+        echo "## OIDC Subject Claim Template" > $GITHUB_STEP_SUMMARY
         echo "~~~" >> $GITHUB_STEP_SUMMARY
         echo "$CLAIM_TEMPLATE" >> $GITHUB_STEP_SUMMARY
         echo "~~~" >> $GITHUB_STEP_SUMMARY
