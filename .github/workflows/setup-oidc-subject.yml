@@ -13,11 +13,12 @@ jobs:
     - name: Set OIDC subject claim
       env:
         GITHUB_TOKEN: ${{ github.token }}
+        REPO: ${{ github.repository }}
       run: |
         gh api \
           --method PUT \
           -H "Accept: application/vnd.github+json" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
-          /repos/OWNER/REPO/actions/oidc/customization/sub \
+          /repos/$REPO/actions/oidc/customization/sub \
           -F use_default=true \
           -f "include_claim_keys[]=job_workflow_ref" -f "include_claim_keys[]=context"
