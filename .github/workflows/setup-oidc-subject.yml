@@ -11,6 +11,8 @@ jobs:
 
     steps:
     - name: Set OIDC subject claim
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
       run: |
         gh api \
           --method PUT \
