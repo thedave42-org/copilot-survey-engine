@@ -11,6 +11,9 @@ jobs:
       actions: write
 
     steps:
+    - name: Checkout repo
+      uses: actions/checkout@v2
+      
     - name: Set OIDC subject claim
       env:
         GITHUB_TOKEN: ${{ github.token }}
