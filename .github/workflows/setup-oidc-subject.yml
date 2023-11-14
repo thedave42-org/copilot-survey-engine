@@ -13,7 +13,7 @@ jobs:
     steps:
     - name: Checkout repo
       uses: actions/checkout@v2
-      
+
     - name: Set OIDC subject claim
       env:
         GITHUB_TOKEN: ${{ github.token }}
@@ -41,7 +41,5 @@ jobs:
       env:
         CLAIM_TEMPLATE: ${{ env.CLAIM_TEMPLATE }}
       run: |
-        echo "## OIDC Subject Claim Template Set" >> $GITHUB_STEP_SUMMARY
-        echo "```" >> $GITHUB_STEP_SUMMARY
+        echo "## OIDC Subject Claim Template Set" > $GITHUB_STEP_SUMMARY
         echo "$CLAIM_TEMPLATE" >> $GITHUB_STEP_SUMMARY
-        echo "```" >> $GITHUB_STEP_SUMMARY

@@ -1,5 +1,4 @@
 {
-    "use_default": true,
     "include_claim_keys": [
         "repo",
         "context",
