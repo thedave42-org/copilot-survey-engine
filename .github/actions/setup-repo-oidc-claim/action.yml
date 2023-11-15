@@ -1,0 +1,39 @@
+name: 'Setup Repo OIDC Claim'
+description: 'Set and verify the OIDC Subject Claim for the repo'
+
+inputs:
+  claim-configuration-file:  # id of input
+    description: 'A JSON file that contains the subject claim definition'
+    required: false
+    default: ${{ github.actions_path }}/aws-subject.json
+  token:  # id of input
+    description: 'A GitHub token with repo permissions'
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  claim-string:
+    description: "A String that contains the subject claim definition in JSON format."
+    value: ${{ steps.claim.outputs.claim-string }}
+
+runs:
+  using: "composite"
+  steps:
+    - run: |
+        export GITHUB_TOKEN=${{ inputs.token }}; gh api \
+          --method PUT \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/actions/oidc/customization/sub \
+          --input ${{ inputs.claim-configuration-file }}
+    - run: |
+        export CLAIM_TEMPLATE=$(gh api \
+          -H "Accept: application/vnd.github+json" \
+          -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/${{ github.repository }}/actions/oidc/customization/sub) 
+        echo "CLAIM_TEMPLATE=$CLAIM_TEMPLATE" >> "$GITHUB_ENV"
+    - run: |
+        echo "claim-string=$CLAIM_TEMPLATE" >> $GITHUB_OUTPUT
+      id: claim
+      env: 
+        CLAIM_TEMPLATE: ${{ env.CLAIM_TEMPLATE }}

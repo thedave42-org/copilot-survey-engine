@@ -15,32 +15,37 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v3
 
-    - name: Set OIDC subject claim
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-        REPO: ${{ github.repository }}
-      run: |
-        gh api \
-          --method PUT \
-          -H "Accept: application/vnd.github+json" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          /repos/$REPO/actions/oidc/customization/sub \
-          --input .github/workflows/aws-subject.json
+    # - name: Set OIDC subject claim
+    #   env:
+    #     GITHUB_TOKEN: ${{ github.token }}
+    #     REPO: ${{ github.repository }}
+    #   run: |
+    #     gh api \
+    #       --method PUT \
+    #       -H "Accept: application/vnd.github+json" \
+    #       -H "X-GitHub-Api-Version: 2022-11-28" \
+    #       /repos/$REPO/actions/oidc/customization/sub \
+    #       --input .github/workflows/aws-subject.json
 
-    - name: Verify OIDC subject claim
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
-        REPO: ${{ github.repository }}
-      run: |
-        export CLAIM_TEMPLATE=$(gh api \
-          -H "Accept: application/vnd.github+json" \
-          -H "X-GitHub-Api-Version: 2022-11-28" \
-          /repos/$REPO/actions/oidc/customization/sub) 
-        echo "CLAIM_TEMPLATE=$CLAIM_TEMPLATE" >> "$GITHUB_ENV"
+    # - name: Verify OIDC subject claim
+    #   env:
+    #     GITHUB_TOKEN: ${{ github.token }}
+    #     REPO: ${{ github.repository }}
+    #   run: |
+    #     export CLAIM_TEMPLATE=$(gh api \
+    #       -H "Accept: application/vnd.github+json" \
+    #       -H "X-GitHub-Api-Version: 2022-11-28" \
+    #       /repos/$REPO/actions/oidc/customization/sub) 
+    #     echo "CLAIM_TEMPLATE=$CLAIM_TEMPLATE" >> "$GITHUB_ENV"
+
+    - name: Set and verify subject claim
+      id: claim
+      uses: ./.github/actions/setup-repo-oidc-claim@main
+
 
     - name: Status summary
       env:
-        CLAIM_TEMPLATE: ${{ env.CLAIM_TEMPLATE }}
+        CLAIM_TEMPLATE: ${{ steps.claim.outputs.claim-string }}
       run: |
         echo "## OIDC Subject Claim Template" > $GITHUB_STEP_SUMMARY
         echo "~~~" >> $GITHUB_STEP_SUMMARY
