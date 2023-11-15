@@ -11,7 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write # This is required for requesting the JWT
-      contents: read
+      actions: write # This is required for setting up the subject claim
+      contents: read # This is required for checking out the repository
 
     steps:
     - name: Checkout repository
@@ -19,8 +20,6 @@ jobs:
 
     - name: Setup AWS subject claim
       uses: thedave42-org/copilot-survey-engine/.github/actions/setup-repo-oidc-claim@main
-      with:
-        token: $${{ secrets.GITHUB_TOKEN }}
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4

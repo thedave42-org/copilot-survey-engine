@@ -5,7 +5,7 @@ inputs:
   claim-configuration-file:  # id of input
     description: 'A JSON file that contains the subject claim definition'
     required: false
-    default: ./.github/actions/setup-repo-oidc-claim/aws-subject.json
+    default: ${{ github.action_path }}/aws-subject.json
   token:  # id of input
     description: 'A GitHub token with repo permissions'
     required: false
