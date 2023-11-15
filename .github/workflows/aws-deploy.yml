@@ -17,6 +17,9 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
+    - name: Setup AWS subject claim
+      uses: ./.github/actions/setup-repo-oidc-claim
+
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
