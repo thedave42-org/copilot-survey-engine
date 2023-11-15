@@ -41,6 +41,8 @@ jobs:
     - name: Set and verify subject claim
       id: claim
       uses: ./.github/actions/setup-repo-oidc-claim
+      with:
+        claim-configuration-file: ./.github/actions/setup-repo-oidc-claim/aws-subject.json
 
 
     - name: Status summary
