@@ -18,7 +18,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Setup AWS subject claim
-      uses: thedave42-org/copilot-survey-engine/.github/actions/setup-repo-oidc-claim
+      uses: thedave42-org/copilot-survey-engine/.github/actions/setup-repo-oidc-claim@main
 
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
