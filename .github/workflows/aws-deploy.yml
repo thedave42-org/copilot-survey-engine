@@ -3,6 +3,9 @@ name: Deploy and Update AWS Resources
 on:
   workflow_dispatch:
 
+env:
+  AWS_REGION: us-west-1
+
 jobs:
   app-deploy:
     runs-on: ubuntu-latest
@@ -17,8 +20,9 @@ jobs:
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4
       with:
-        aws-region: us-west-1
+        aws-region: ${{ env.AWS_REGION }}
         role-to-assume: arn:aws:iam::377117578606:role/thedave42-copilot-survey-engine
+
 
 #    - name: Setup Terraform
 #      uses: hashicorp/setup-terraform@v2
