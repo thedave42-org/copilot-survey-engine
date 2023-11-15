@@ -20,13 +20,15 @@ runs:
   using: "composite"
   steps:
     - run: |
-        export GITHUB_TOKEN=${{ inputs.token }}; gh api \
+        gh api \
           --method PUT \
           -H "Accept: application/vnd.github+json" \
           -H "X-GitHub-Api-Version: 2022-11-28" \
           /repos/${{ github.repository }}/actions/oidc/customization/sub \
           --input ${{ inputs.claim-configuration-file }}
       shell: bash
+      env: 
+        GH_TOKEN: ${{ inputs.token }}
     - run: |
         export CLAIM_TEMPLATE=$(gh api \
           -H "Accept: application/vnd.github+json" \
@@ -34,9 +36,12 @@ runs:
           /repos/${{ github.repository }}/actions/oidc/customization/sub) 
         echo "CLAIM_TEMPLATE=$CLAIM_TEMPLATE" >> "$GITHUB_ENV"
       shell: bash
+      env: 
+        GH_TOKEN: ${{ inputs.token }}
     - run: |
         echo "claim-string=$CLAIM_TEMPLATE" >> $GITHUB_OUTPUT
       id: claim
       env: 
+        GH_TOKEN: ${{ inputs.token }}
         CLAIM_TEMPLATE: ${{ env.CLAIM_TEMPLATE }}
       shell: bash
