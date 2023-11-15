@@ -40,7 +40,7 @@ jobs:
 
     - name: Set and verify subject claim
       id: claim
-      uses: ./.github/actions/setup-repo-oidc-claim@main
+      uses: ./.github/actions/setup-repo-oidc-claim
 
 
     - name: Status summary
