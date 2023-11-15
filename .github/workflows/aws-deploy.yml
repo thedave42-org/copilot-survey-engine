@@ -21,11 +21,11 @@ jobs:
         role-to-assume: arn:aws:iam::377117578606:role/thedave42-copilot-survey-engine
         role-session-name: copilot-survey-engine
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v2
-
-    - name: Initialize Terraform
-      run: terraform init ./deployment/aws-infra/
-
-    - name: Apply Terraform
-      run: terraform apply -auto-approve ./deployment/aws-infra/
+#    - name: Setup Terraform
+#      uses: hashicorp/setup-terraform@v2
+#
+#    - name: Initialize Terraform
+#      run: terraform init ./deployment/aws-infra/
+#
+#    - name: Apply Terraform
+#      run: terraform apply -auto-approve ./deployment/aws-infra/
