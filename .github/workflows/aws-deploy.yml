@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       id-token: write # This is required for requesting the JWT
-      actions: write # This is required for setting up the subject claim
+      actions: write # This is required for setting up the OIDC subject claim
       contents: read # This is required for checking out the repository
 
     steps:
