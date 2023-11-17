@@ -4,7 +4,7 @@ title: "Use this Issue to request survey data in CSV format for a specific data 
 labels: ["survey data requested"]
 body:
   - type: markdown
-    attibutes:
+    attributes:
       value: "## Please enter a date range"
 
 
