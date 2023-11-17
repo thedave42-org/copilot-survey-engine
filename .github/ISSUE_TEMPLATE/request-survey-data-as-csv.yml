@@ -20,5 +20,3 @@ body:
       placeholder: "MM/DD/YYYY"
     validations:
       required: true  
-
-

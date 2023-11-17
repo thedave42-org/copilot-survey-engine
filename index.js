@@ -6,7 +6,7 @@
 const dedent = require("dedent");
 const fs = require("fs");
 const path = require("path");
-const sql = require("mssql");
+//const sql = require("mssql");
 const { Client } = require("pg");
 
 require("dotenv").config();
@@ -17,7 +17,7 @@ const { LANGUAGE_API_KEY, LANGUAGE_API_ENDPOINT, DATABASE_CONNECTION_STRING } =
 const { PG_HOST, PG_PORT, PG_DATABASE, PG_USERNAME, PG_PASSWORD } = process.env;
 
 /**
- * @type {Knex}
+ * @type {knex}
  */
 const knex = require("knex")({
   client: "pg",
@@ -35,6 +35,11 @@ module.exports = (app) => {
   app.log.info("Yay, the app was loaded!");
 
   app.on("pull_request.closed", async (context) => {
+    let hasLicense = await hasCopilotLicense(context);
+    if (!hasLicense) {
+      return;
+    }
+    
     let pr_number = context.payload.pull_request.number;
     let pr_body = context.payload.pull_request.body;
     let detectedLanguage = "en";
@@ -94,6 +99,21 @@ module.exports = (app) => {
     } catch (err) {
       app.log.error(err);
     }
+  });
+
+  app.on("issues.opened", async (context) => {
+    if (context.payload.issue.title.startsWith("Request Survey Data as CSV")) {
+      app.log.info(context.payload.issue.body);
+      let surveyDataRequested = context.payload.issue.labels.some((label) => label.name == "survey data requested");
+      if (surveyDataRequested) {
+        app.log.info("survey data requested");
+      }
+    }
+
+  });
+
+  app.on("issues.labelled", async (context) => {
+
   });
 
   app.on("issues.edited", async (context) => {
@@ -238,6 +258,37 @@ module.exports = (app) => {
     }
   }
 
+  // create a function that will use the octokit interface to see if this user has a copilot license that was issued by this organization
+  async function hasCopilotLicense(context) {
+    let hasLicense = false;
+    try {
+      const response = await context.octokit.request('GET /orgs/{org}/copilot/billing/seats', {
+        org: context.payload.organization.login,
+        headers: {
+          'X-GitHub-Api-Version': '2022-11-28'
+        }
+      });
+
+      if ( response.data.total_seats != undefined && response.data.total_seats > 0 ) {
+        response.data.seats.forEach(seat => {
+          if ( seat.assignee.login == context.payload.sender.login ) {
+            app.log.info(`User ${context.payload.sender.login} has a copilot license issued by ${context.payload.organization.login}`);
+            hasLicense = true;
+          }
+        });
+      }
+      if (!hasLicense) {
+        app.log.info(`User ${context.payload.sender.login} does not have a copilot license issued by ${context.payload.organization.login}`);
+      }
+      
+      return hasLicense;
+    } 
+    catch (err) {
+      app.log.error(err);
+      return false;
+    }
+  }
+
   async function insertIntoDB(
     context,
     issue_id,
@@ -252,14 +303,7 @@ module.exports = (app) => {
       //conn = await sql.connect(DATABASE_CONNECTION_STRING);
 
       // Check if table exists
-      /*
-      let tableCheckResult = await sql.query`
-      SELECT *
-      FROM INFORMATION_SCHEMA.TABLES
-      WHERE TABLE_NAME = 'SurveyResults'
-    `;
-      //*/
-      let tableCheckResult = await knex.schema.hasTable("SurveyResults");
+      const tableCheckResult = await knex.schema.hasTable("SurveyResults");
 
       /*
       if (tableCheckResult.recordset.length === 0) {
@@ -287,11 +331,30 @@ module.exports = (app) => {
 
       if (!tableCheckResult) {
         // Create table if it doesn't exist
-        
+        await knex.schema.createTable("SurveyResults", (table) => {
+          table.increments("record_ID");
+          table.string("enterprise_name", 50);
+          table.string("organization_name", 50);
+          table.string("repository_name", 50);
+          table.integer("issue_id");
+          table.string("issue_number", 20);
+          table.string("PR_number", 20);
+          table.string("assignee_name", 50);
+          table.boolean("is_copilot_used");
+          table.string("saving_percentage", 25);
+          table.string("usage_frequency", 50);
+          table.string("comment", 255);
+          table.dateTime("created_at");
+          table.dateTime("completed_at");
+        });  
+      }
 
-      let result =
-        await sql.query`SELECT * FROM SurveyResults WHERE Issue_id = ${issue_id}`;
-      app.log.info("Database has been created and issue id existence has been confirmed");
+      // let result =
+      //   await sql.query`SELECT * FROM SurveyResults WHERE Issue_id = ${issue_id}`;
+      // app.log.info("Database has been created and issue id existence has been confirmed");
+
+      // Get a result for the issue_id if it exists
+      let result = await knex("SurveyResults").where("issue_id", issue_id);
 
       // convert pctValue to string
       if (pctValue) {
@@ -307,74 +370,38 @@ module.exports = (app) => {
         assignee_name = context.payload.issue.assignee.login;
       }
 
-      if (result.recordset.length > 0) {
-        // create query
-        let update_query = `UPDATE [SurveyResults] SET [is_copilot_used] = ${isCopilotUsed? 1 : 0}, [completed_at] = '${context.payload.issue.updated_at}'`;
-        if (assignee_name) {
-          update_query += `, [assignee_name] = '${assignee_name}'`;
-        }
-        if (pctValue) {
-          update_query += `, [saving_percentage] = '${pctValue}'`;
-        }
-        if (freqValue) {
-          update_query += `, [usage_frequency] = '${freqValue}'`;
-        }
-        if (comment) {
-          update_query += `, [comment] = '${comment}'`;
-        }
-        update_query += ` WHERE [issue_id] = ${issue_id}`;
-
-        // update existing record
-        let update_result = await sql.query(update_query);
-        app.log.info(update_result);
-        return update_query;
+      // If there are no results for the issue_id, insert a new record using knex, otherwise update the existing record using knex
+      if (result.length === 0) {
+        // insert new record
+        await knex("SurveyResults").insert({
+          enterprise_name: context.payload.repository.owner.login,
+          organization_name: context.payload.organization.login,
+          repository_name: context.payload.repository.name,
+          issue_id: issue_id,
+          issue_number: context.payload.issue.number,
+          PR_number: pr_number,
+          assignee_name: assignee_name,
+          is_copilot_used: isCopilotUsed,
+          saving_percentage: pctValue,
+          usage_frequency: freqValue,
+          comment: comment,
+          created_at: context.payload.issue.created_at,
+          completed_at: context.payload.issue.updated_at,
+        });
       } else {
-        // check if dynamic values are present in context.payload
-        let enterprise_name = null;
-        let organization_name = null;
-        if (context.payload.enterprise) {
-          enterprise_name = context.payload.enterprise.name;
-        }
-        if(context.payload.organization){
-          organization_name = context.payload.organization.login;
-        }
-        if(context.payload.organization){
-          organization_name = context.payload.organization.login;
-        }
-        let insert_query = `INSERT INTO SurveyResults (
-            enterprise_name,
-            organization_name,
-            repository_name,
-            issue_id,
-            issue_number,
-            PR_number,
-            assignee_name,
-            is_copilot_used,
-            saving_percentage,
-            usage_frequency,
-            comment,
-            created_at,
-            completed_at
-          )
-          VALUES (
-            '${enterprise_name}',
-            '${organization_name}',
-            '${context.payload.repository.name}',
-             ${issue_id},
-             ${context.payload.issue.number},
-             ${pr_number},
-            '${assignee_name}',
-             '${isCopilotUsed}',
-            '${pctValue}',
-            '${freqValue}',
-            '${comment}',
-            '${context.payload.issue.created_at}',
-            '${context.payload.issue.updated_at}'
-          )`;
-        let insert_result = await sql.query(insert_query);
-        app.log.info(insert_result);
-        return insert_query;
+        // update existing record
+        await knex("SurveyResults")
+          .where("issue_id", issue_id)
+          .update({
+            is_copilot_used: isCopilotUsed,
+            completed_at: context.payload.issue.updated_at,
+            assignee_name: assignee_name,
+            saving_percentage: pctValue,
+            usage_frequency: freqValue,
+            comment: comment,
+          });
       }
+
     } catch (err) {
       app.log.error(err);
     } finally {
@@ -383,10 +410,4 @@ module.exports = (app) => {
       }
     }
   }
-
-  // For more information on building apps:
-  // https://probot.github.io/docs/
-
-  // To get your app running against GitHub, see:
-  // https://probot.github.io/docs/development/
 };
