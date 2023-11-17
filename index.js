@@ -6,7 +6,6 @@
 const dedent = require("dedent");
 const fs = require("fs");
 const path = require("path");
-//const sql = require("mssql");
 const { Client } = require("pg");
 
 require("dotenv").config();
