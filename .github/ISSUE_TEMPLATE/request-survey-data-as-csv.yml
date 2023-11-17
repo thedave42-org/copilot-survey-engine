@@ -2,5 +2,10 @@ name: Request Survey Data as CSV
 description: Use this Issue to request survey data in CSV format for a specific data range
 title: "Use this Issue to request survey data in CSV format for a specific data range"
 labels: ["survey data requested"]
+body:
+  - type: markdown
+    attibutes:
+      value: |
+        ## Please enter a date range
 
 
