@@ -5,7 +5,6 @@ labels: ["survey data requested"]
 body:
   - type: markdown
     attibutes:
-      value: |
-        ## Please enter a date range
+      value: "## Please enter a date range"
 
 
