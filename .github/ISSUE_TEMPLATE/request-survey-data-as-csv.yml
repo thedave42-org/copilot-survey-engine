@@ -8,14 +8,14 @@ body:
       value: "## Please enter a date range"
   - type: input
     id: start-date
-    atributes:
+    attributes:
       label: "Start date:"
       placeholder: "MM/DD/YYYY"
     validations:
       required: true
   - type: input
     id: end-date
-    atributes:
+    attributes:
       label: "End date:"
       placeholder: "MM/DD/YYYY"
     validations:
