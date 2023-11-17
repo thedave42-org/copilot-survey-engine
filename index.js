@@ -104,15 +104,15 @@ module.exports = (app) => {
   app.on("issues.opened", async (context) => {
     if (context.payload.issue.title.startsWith("Request Survey Data as CSV")) {
       app.log.info(context.payload.issue.body);
-      let surveyDataRequested = context.payload.issue.labels.some((label) => label.name == "survey data requested");
+      let surveyDataRequested = context.payload.issue.labels.some((label) => label.name == "copilot survey data requested");
       if (surveyDataRequested) {
-        app.log.info("survey data requested");
+        app.log.info("copilot survey data requested");
       }
     }
 
   });
 
-  app.on("issues.labelled", async (context) => {
+  app.on("issues.labeled", async (context) => {
 
   });
 
@@ -374,7 +374,7 @@ module.exports = (app) => {
       if (result.length === 0) {
         // insert new record
         await knex("SurveyResults").insert({
-          enterprise_name: context.payload.repository.owner.login,
+          enterprise_name: context.payload.enterprise.slug,
           organization_name: context.payload.organization.login,
           repository_name: context.payload.repository.name,
           issue_id: issue_id,

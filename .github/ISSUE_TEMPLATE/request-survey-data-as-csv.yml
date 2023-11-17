@@ -1,7 +1,7 @@
 name: Request Survey Data as CSV
 description: Use this Issue to request survey data in CSV format for a specific data range
 title: "Request Survey Data as CSV"
-labels: ["survey data requested"]
+labels: ["copilot survey data requested"]
 body:
   - type: markdown
     attributes:
