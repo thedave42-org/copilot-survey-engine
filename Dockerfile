@@ -1,8 +1,5 @@
 FROM node:18-slim
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    python \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y 
 WORKDIR /usr/src/app
 COPY package.json package-lock.json ./
 RUN npm ci --production
