@@ -49,7 +49,7 @@ jobs:
 
           modified_json=$(echo "$json_data" | jq 'walk(if type == "object" and .artifactLocation.uri? then .artifactLocation.uri = "Dockerfile" else . end)')
           modified_json=$(echo "$modified_json" | jq 'walk(if type == "object" and .artifactLocation.uriBaseId? then .artifactLocation.uriBaseId = "%SRCROOT%" else . end)')
-          modified_json=$(echo "$modified_json" | jq 'walk(if type == "object" and .ROOTPATH.uri? then .ROOTPATH.uri = "%SRCROOT%" else . end)')
+          # modified_json=$(echo "$modified_json" | jq 'walk(if type == "object" and .ROOTPATH.uri? then .ROOTPATH.uri = "%SRCROOT%" else . end)')
 
           # Write the modified JSON data back to the file
           echo "$modified_json" > ghas-results.sarif
