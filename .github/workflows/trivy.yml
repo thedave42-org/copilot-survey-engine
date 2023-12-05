@@ -52,18 +52,17 @@ jobs:
           modified_json=$(echo "$modified_json" | jq 'walk(if type == "object" and .ROOTPATH.uri? then .ROOTPATH.uri = "%SRCROOT%" else . end)')
 
           # Write the modified JSON data back to the file
-          echo "$modified_json" > trivy-results.sarif
+          echo "$modified_json" > ghas-results.sarif
           
             
-      - name: Upload sarif as artifact
+      - name: Upload sarif files as artifact
         uses: actions/upload-artifact@v3
         with:
           name: trivy-sarif
           path: |
-            !node_modules/**
-            trivy-results.sarif
+            *.sarif
 
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v2
         with:
-          sarif_file: 'trivy-results.sarif'
+          sarif_file: 'ghas-results.sarif'
