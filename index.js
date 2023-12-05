@@ -7,6 +7,7 @@ const dedent = require("dedent");
 const fs = require("fs");
 const path = require("path");
 const { Client } = require("pg");
+const { Parser } = require('@json2csv/plainjs');
 
 require("dotenv").config();
 
@@ -30,7 +31,6 @@ const knex = require("knex")({
 });
 
 module.exports = (app) => {
-  // Your code here
   app.log.info("Yay, the app was loaded!");
 
   app.on("pull_request.closed", async (context) => {
@@ -103,9 +103,10 @@ module.exports = (app) => {
   app.on("issues.opened", async (context) => {
     if (context.payload.issue.title.startsWith("Request Survey Data as CSV")) {
       app.log.info(context.payload.issue.body);
-      let surveyDataRequested = context.payload.issue.labels.some((label) => label.name == "copilot survey data requested");
-      if (surveyDataRequested) {
+      let reportDataRequested = context.payload.issue.labels.some((label) => label.name == "copilot survey data requested");
+      if (reportDataRequested) {
         app.log.info("copilot survey data requested");
+        await getReportData(context);
       }
     }
 
@@ -126,6 +127,33 @@ module.exports = (app) => {
       await GetSurveyData(context);
     }
   });
+
+  async function getReportData(context) {
+    /* context.payload.issue.body contains a string with the following value:
+    ### Start date:
+
+01/01/2023
+
+### End date:
+
+12/31/2023
+    */
+    let issue_body = context.payload.issue.body;
+    // extract start date and end date from issue_body
+    let startDate = issue_body.match(/Start date:\n\n(.*)\n\n/)[1];
+    let endDate = issue_body.match(/End date:\n\n(.*)/)[1];
+    // get all rows from DB where date is between startDate and endDate
+    let results = await knex
+      .select("*")
+      .from("SurveyResults")
+      .whereBetween("completed_at", [startDate, endDate]);
+
+    let resultsJSON = JSON.stringify(results);
+    let resultsCSV = new Parser().parse(results);
+    
+    app.log.info(resultsCSV);
+
+  }
 
   async function GetSurveyData(context) {
     let issue_body = context.payload.issue.body;
@@ -257,7 +285,6 @@ module.exports = (app) => {
     }
   }
 
-  // create a function that will use the octokit interface to see if this user has a copilot license that was issued by this organization
   async function hasCopilotLicense(context) {
     let hasLicense = false;
     try {
